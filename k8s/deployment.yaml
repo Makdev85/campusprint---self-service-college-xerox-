@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: campus-xerox-deployment
+  namespace: campus-xerox
+  labels:
+    app: campus-xerox
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: campus-xerox
+  template:
+    metadata:
+      labels:
+        app: campus-xerox
+        tier: frontend
+    spec:
+      containers:
+        - name: campus-xerox-app
+          image: YOUR_DOCKERHUB_USERNAME/campus-xerox-app:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 80
+          # REQUIRED FOR HPA CPU SCALING:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5

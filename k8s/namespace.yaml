@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: campus-xerox
+  labels:
+    app.kubernetes.io/name: campus-xerox
+    app.kubernetes.io/part-of: capstone-project

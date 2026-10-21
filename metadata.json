@@ -1,0 +1,6 @@
+{
+  "name": "CampusPrint - Self-Service College Xerox Kiosk",
+  "description": "Smart campus self-service printing kiosk with instant QR ordering, UPI payments, live mechanical spooling simulation, secure PIN tray collection, and IoT hardware telemetry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

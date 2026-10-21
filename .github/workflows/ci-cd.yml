@@ -1,0 +1,77 @@
+name: CI/CD Pipeline - Build, Containerize & Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE_NAME: campus-xerox-app
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    name: Build & Push Docker Image
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract Metadata (Tags, Labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short,prefix=sha-
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Slack / Discord / Webhook Notification Integration
+      - name: Send Success Notification (Slack / Discord / Teams)
+        if: success() && github.event_name != 'pull_request'
+        run: |
+          if [ -n "${{ secrets.NOTIFICATION_WEBHOOK_URL }}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{
+                "text": "✅ *CI/CD Pipeline Succeeded!* \n• *Repository:* '${{ github.repository }}' \n• *Commit:* '${{ github.sha }}' \n• *Image:* '${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest' \n• *Status:* Built and pushed to Docker Hub ready for Kubernetes HPA deployment."
+              }' \
+              "${{ secrets.NOTIFICATION_WEBHOOK_URL }}"
+          else
+            echo "Notification webhook URL not configured. Skipping step."
+          fi
+
+      - name: Send Failure Notification
+        if: failure() && github.event_name != 'pull_request'
+        run: |
+          if [ -n "${{ secrets.NOTIFICATION_WEBHOOK_URL }}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{
+                "text": "❌ *CI/CD Pipeline Failed!* \n• *Repository:* '${{ github.repository }}' \n• *Commit:* '${{ github.sha }}' \n• *Action Required:* Check GitHub Actions logs."
+              }' \
+              "${{ secrets.NOTIFICATION_WEBHOOK_URL }}"
+          fi

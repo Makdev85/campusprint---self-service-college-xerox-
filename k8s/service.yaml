@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: campus-xerox-service
+  namespace: campus-xerox
+  labels:
+    app: campus-xerox
+spec:
+  type: LoadBalancer # In Minikube/Kind, this can also be accessed via `minikube service` or NodePort
+  selector:
+    app: campus-xerox
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30080 # For direct NodePort access in Minikube / Kind
